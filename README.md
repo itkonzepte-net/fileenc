@@ -11,12 +11,29 @@ fileenc from a local directory which may require you to qualify the location of 
 
 ## Usage
 
+### General
+
 `fileenc -source <file> -key <key> [-decrypt]` 
 
 fileenc will read the provided file and create a file <file>.enc that contains the encrypted contents using the provided <key>. 
 If -decrypt is provided reads the file <file>.enc and writes it into <file>
 
 <key> must be 16, 24 or 32 characters long!
+
+### Example
+
+Encrypt text.txt to text.txt.enc (creates or overwrites file text.txt.enc)
+
+```sh
+fileenc -source text.txt -key ThisPassIsNtSafe
+```
+
+Decrypt (creates or overwrites text.txt)
+
+```sh
+fileenc -source text.txt -key ThisPassIsNtSafe -decrypt
+```
+
 
 ## Contribute
 
