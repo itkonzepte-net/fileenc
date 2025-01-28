@@ -1,5 +1,29 @@
 package main
 
+/* fileenc - a very basic file en/decryptor
+Copyright (C) 2025 Mathias Pohl, IT Konzepte Pohl, info@itkonzepte.net
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
 import (
 	"crypto/aes"
 	"crypto/cipher"
@@ -13,7 +37,17 @@ import (
 )
 
 // encrypt encrypts the file at the given path using AES and saves it with the .enc extension
-func encrypt(filePath string, key []byte) error {
+func encrypt(filePath string, key []byte, overwrite bool) error {
+	// Create the destination file path with .enc extension
+	encFilePath := filePath + ".enc"
+
+	// Check if the encrypted file already exists and overwrite is not enabled
+	if !overwrite {
+		if _, err := os.Stat(encFilePath); err == nil {
+			return fmt.Errorf("file %s already exists, overwrite is disabled", encFilePath)
+		}
+	}
+
 	// Open the source file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -21,8 +55,7 @@ func encrypt(filePath string, key []byte) error {
 	}
 	defer file.Close()
 
-	// Create the destination file with .enc extension
-	encFilePath := filePath + ".enc"
+	// Create the destination file
 	encFile, err := os.Create(encFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create encrypted file: %w", err)
@@ -55,10 +88,20 @@ func encrypt(filePath string, key []byte) error {
 }
 
 // decrypt decrypts the .enc file at the given path using AES and removes the .enc extension
-func decrypt(filePath string, key []byte) error {
+func decrypt(filePath string, key []byte, overwrite bool) error {
 	// Ensure the file has the .enc extension
 	if !strings.HasSuffix(filePath, ".enc") {
 		return errors.New("file does not have .enc extension")
+	}
+
+	// Create the destination file path without the .enc extension
+	decFilePath := strings.TrimSuffix(filePath, ".enc")
+
+	// Check if the decrypted file already exists and overwrite is not enabled
+	if !overwrite {
+		if _, err := os.Stat(decFilePath); err == nil {
+			return fmt.Errorf("file %s already exists, overwrite is disabled", decFilePath)
+		}
 	}
 
 	// Open the encrypted file
@@ -68,8 +111,7 @@ func decrypt(filePath string, key []byte) error {
 	}
 	defer file.Close()
 
-	// Create the destination file without the .enc extension
-	decFilePath := strings.TrimSuffix(filePath, ".enc")
+	// Create the destination file
 	decFile, err := os.Create(decFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create decrypted file: %w", err)
@@ -100,6 +142,7 @@ func main() {
 	pass := flag.String("key", "", "password for encryption")
 	sourceFile := flag.String("source", "", "file subject for processing, no .enc extension!")
 	decryptFlag := flag.Bool("decrypt", false, "run decryption, default encryption")
+	overwriteFlag := flag.Bool("overwrite", false, "if not set, will not overwrite existing files; if set, files are overwritten with encrypted/decrypted data!")
 	flag.Parse()
 
 	if len(*pass) == 0 {
@@ -115,9 +158,13 @@ func main() {
 		return
 	}
 
+	if *overwriteFlag {
+		fmt.Println("WARNING: Overwrite enabled.")
+	}
+
 	if !*decryptFlag {
 		// Encrypt the file
-		if err := encrypt(*sourceFile, key); err != nil {
+		if err := encrypt(*sourceFile, key, *overwriteFlag); err != nil {
 			fmt.Printf("Error encrypting file: %v\n", err)
 			return
 		}
@@ -125,7 +172,7 @@ func main() {
 
 	} else {
 		// Decrypt the file
-		if err := decrypt(*sourceFile+".enc", key); err != nil {
+		if err := decrypt(*sourceFile+".enc", key, *overwriteFlag); err != nil {
 			fmt.Printf("Error decrypting file: %v\n", err)
 			return
 		}
