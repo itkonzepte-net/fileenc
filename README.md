@@ -33,7 +33,10 @@ Decrypt (creates or overwrites text.txt)
 ```sh
 fileenc -source text.txt -key ThisPassIsNtSafe -decrypt
 ```
+## Caveats
 
+Does not check for passwords correctness. Uses password to generate encryption/decryption key and hence in case of a wrong
+password you'll get data garbage. 
 
 ## Contribute
 
